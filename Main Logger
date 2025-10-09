@@ -1,0 +1,147 @@
+-- Execution Webhook Reporter (AC testing) - Full example
+-- >>> Put your webhook URL here <<<
+getgenv().webhook = getgenv().webhook or "https://discord.com/api/webhooks/1424417773760806932/WAhsrm6JDEzqe39VG--2IvpTxoU-AP1AXSOGeY99oS3o5BBtNsMSFBTD4qnxwvwLTYkz"
+
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- ---------- Executor detection (expanded) ----------
+local function detectExecutor()
+    if type(identifyexecutor) == "function" then
+        local ok, res = pcall(identifyexecutor)
+        if ok and type(res) == "string" and #res > 0 then
+            return res
+        end
+    end
+
+    local map = {
+        ["syn"] = "Synapse X",
+        ["SENTINEL"] = "Sentinel",
+        ["KRNL_LOADED"] = "Krnl",
+        ["krnl"] = "Krnl",
+        ["Krnl"] = "Krnl",
+        ["Delta"] = "Delta",
+        ["DELTA_LOADED"] = "Delta",
+        ["codex"] = "Codex",
+        ["Codex"] = "Codex",
+        ["CODEX"] = "Codex",
+        ["Fluxus"] = "Fluxus",
+        ["isos"] = "Iso",
+        ["protossm"] = "ProtoSmasher",
+        ["WeAreDevsExecutor"] = "WeAreDevs",
+        ["getexecutor"] = "getexecutor",
+        ["identifyexecutor"] = "identifyexecutor",
+        ["Exploit"] = "Exploit",
+        ["SecureLoad"] = "SecureLoad",
+        ["http_request"] = "HTTP-Available",
+        ["request"] = "HTTP-Available",
+    }
+
+    for g, name in pairs(map) do
+        local ok, val = pcall(function() return rawget(_G, g) end)
+        if ok and val ~= nil then
+            return name
+        end
+        local ok2, val2 = pcall(function() return _G[g] end)
+        if ok2 and val2 ~= nil then
+            return name
+        end
+    end
+
+    if type(syn) == "table" then return "Synapse X" end
+    if type(fluxus) == "table" then return "Fluxus" end
+    if type(Delta) == "table" or rawget(_G, "DELTA_LOADED") then return "Delta" end
+    if type(codex) == "table" or rawget(_G, "CODEX") then return "Codex" end
+    if type(kRNl) == "table" or rawget(_G, "KRNL_LOADED") then return "Krnl" end
+
+    if type(http_request) == "function" or type(request) == "function" or (type(syn) == "table" and type(syn.request) == "function") then
+        return "Unknown (HTTP available)"
+    end
+
+    return "Unknown/Undetected"
+end
+
+-- ---------- Utility: ISO timestamp ----------
+local function nowISO()
+    if DateTime and DateTime.now then
+        return DateTime.now():ToIsoDate()
+    else
+        return os.date("!%Y-%m-%dT%H:%M:%SZ")
+    end
+end
+
+-- ---------- Send webhook (where logging is performed) ----------
+local function sendWebhook()
+    local webhookUrl = getgenv().webhook
+    if not webhookUrl or webhookUrl == "" then
+        warn("[WebhookReporter] No webhook set in getgenv().webhook")
+        return
+    end
+
+    local executorName = detectExecutor()
+    local username = (LocalPlayer and LocalPlayer.Name) or "Unknown"
+    local userId = (LocalPlayer and tostring(LocalPlayer.UserId)) or "Unknown"
+    local platform = "Unknown"
+    pcall(function()
+        platform = tostring(UserInputService:GetPlatform() or "Unknown")
+    end)
+
+    local embed = {
+        username = "Goose Hub Logs",
+        embeds = {
+            {
+                title = "Execution Report",
+                color = 16753920,
+                fields = {
+                    { name = "Executor / Tool", value = tostring(executorName), inline = false },
+                    { name = "Executed By (Username)", value = tostring(username), inline = true },
+                    { name = "Executed By (UserId)", value = tostring(userId), inline = true },
+                    { name = "Platform", value = platform, inline = true },
+                    { name = "Date / Time (ISO)", value = nowISO(), inline = false },
+                    { name = "PlaceId", value = tostring(game.PlaceId or "Unknown"), inline = true },
+                    { name = "JobId", value = tostring(game.JobId or "Unknown"), inline = true }
+                },
+                footer = { text = "Goose Ac testing — keep logs secure" },
+                timestamp = nowISO()
+            }
+        }
+    }
+
+    local body = HttpService:JSONEncode(embed)
+
+    local req = nil
+    if type(syn) == "table" and type(syn.request) == "function" then
+        req = function(opts) return syn.request(opts) end
+    elseif type(http_request) == "function" then
+        req = function(opts) return http_request(opts) end
+    elseif type(request) == "function" then
+        req = function(opts) return request(opts) end
+    end
+
+    if not req then
+        warn("[WebhookReporter] No HTTP request function available in this environment.")
+        return
+    end
+
+    local ok, res = pcall(function()
+        return req({
+            Url = webhookUrl,
+            Method = "POST",
+            Headers = { ["Content-Type"] = "application/json" },
+            Body = body
+        })
+    end)
+
+    if ok then
+        print("[WebhookReporter] Webhook sent successfully.")
+    else
+        warn("[WebhookReporter] Failed to send webhook:", res)
+    end
+end
+
+-- ---------- Execution ----------
+print("[WebhookReporter] Starting execution report...")
+sendWebhook()
