@@ -1,4 +1,4 @@
--- Execution Webhook Reporter (AC testing) - Full example
+-- Execution Webhook Reporter
 -- >>> Put your webhook URL here <<<
 getgenv().webhook = getgenv().webhook or "https://discord.com/api/webhooks/1424417773760806932/WAhsrm6JDEzqe39VG--2IvpTxoU-AP1AXSOGeY99oS3o5BBtNsMSFBTD4qnxwvwLTYkz"
 
@@ -104,7 +104,7 @@ local function sendWebhook()
                     { name = "PlaceId", value = tostring(game.PlaceId or "Unknown"), inline = true },
                     { name = "JobId", value = tostring(game.JobId or "Unknown"), inline = true }
                 },
-                footer = { text = "Goose Ac testing — keep logs secure" },
+                footer = { text = "Goose Logs  — keeping logs secure" },
                 timestamp = nowISO()
             }
         }
