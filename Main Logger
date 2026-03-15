@@ -1,5 +1,3 @@
--- Execution Webhook Reporter
--- >>> Put your webhook URL here <<<
 getgenv().webhook = getgenv().webhook or "https://discord.com/api/webhooks/1424417773760806932/WAhsrm6JDEzqe39VG--2IvpTxoU-AP1AXSOGeY99oS3o5BBtNsMSFBTD4qnxwvwLTYkz"
 
 local HttpService = game:GetService("HttpService")
@@ -8,7 +6,6 @@ local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
 
--- ---------- Executor detection (expanded) ----------
 local function detectExecutor()
     if type(identifyexecutor) == "function" then
         local ok, res = pcall(identifyexecutor)
